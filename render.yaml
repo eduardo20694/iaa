@@ -4,4 +4,4 @@ services:
     env: python  # Ambiente para rodar a aplicação (Python)
     buildCommand: "pip install -r requirements.txt"  # Comando para instalar as dependências
     startCommand: "python app.py"  # Comando para iniciar a aplicação
-    port: 5000  # Porta que o Render irá expor para o tráfego
+    port: 10000  # Porta que o Render irá expor para o tráfego

@@ -9,7 +9,11 @@
     "routes": [
       {
         "src": "/pergunta",
-        "dest": "app.py"
+        "dest": "/app.py"
+      },
+      {
+        "src": "/(.*)",
+        "dest": "/app.py"
       }
     ]
   }

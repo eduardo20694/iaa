@@ -3,6 +3,7 @@ from transformers import pipeline
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+import os
 
 app = Flask(__name__)
 
@@ -80,4 +81,5 @@ def responder_pergunta():
 
 # 🔹 Inicializar a API Flask
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Usar a variável de ambiente PORT fornecida pelo Render (ou 5000 como fallback para desenvolvimento local)
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))

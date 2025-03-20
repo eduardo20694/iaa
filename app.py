@@ -67,6 +67,18 @@ def encontrar_resposta(pergunta_usuario):
     return result['answer'] if result['score'] > 0.5 else "Desculpe, não consegui encontrar uma resposta precisa para a sua pergunta."
 
 # 🔹 Endpoint da API para perguntas e respostas
+
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({
+        "mensagem": "Bem-vindo à API de Perguntas e Respostas!",
+        "instrucoes": "Use o endpoint POST /pergunta para enviar perguntas no formato JSON.",
+        "exemplo": {
+            "url": "/pergunta",
+            "formato": {"pergunta": "sua pergunta aqui"}
+        }
+    }), 200
+
 @app.route('/pergunta', methods=['POST'])
 def responder_pergunta():
     # Obter pergunta do corpo da requisição

@@ -4,7 +4,9 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import os
+from functools import lru_cache
 
+# 🔹 Inicializar aplicação Flask
 app = Flask(__name__)
 
 # 🔹 Carregar modelo DistilBERT para Perguntas e Respostas
@@ -18,7 +20,7 @@ perguntas_respostas = {
     "Qual é o seu nome?": "Meu nome é Eduardo Rodrigues Sparremberger.",
     "Quantos anos você tem?": "Eu tenho 22 anos.",
     "Onde você mora?": "Eu moro em Itati.",
-    "Qual é a sua formação acadêmica?": "Eu sou estudante de Análise e Desenvolvimento de Sistemas e estudo sobre JavaScript.",
+     "Qual é a sua formação acadêmica?": "Eu sou estudante de Análise e Desenvolvimento de Sistemas e estudo sobre JavaScript.",
     "Onde você estuda?": "Eu estudo na Universidade FASUL, no curso de Análise e Desenvolvimento de Sistemas.",
     "Você tem irmãos?": "Sim, eu tenho um irmão mais velho chamado Daniel.",
     "Você tem filhos? Ou esposa?": "Eu estou esperando uma filha chamada Mavie. Sim, tenho esposa chamada Eziane da Silva Eberhardt!",
@@ -31,9 +33,11 @@ perguntas_respostas = {
     "De quem é a Mavie?": "Mavie é filha de Eduardo Rodrigues Sparremberger e Eziane da Silva Eberhardt.",
     "Onde eu moro?": "Eu moro em Itati, Rio Grande do Sul.",
     "Quem vai ganhar o Gauchão?": "Claro que o Grêmio, Sr. Eduardo!!!"
+    
 }
 
-# 🔹 Função para gerar embeddings das perguntas
+# 🔹 Função para gerar embeddings das perguntas com cache
+@lru_cache(maxsize=100)
 def gerar_embeddings(perguntas):
     return np.array(embedding_model.encode(perguntas, normalize_embeddings=True))  # Normalização melhora precisão
 
@@ -43,8 +47,8 @@ def encontrar_resposta(pergunta_usuario):
     perguntas = list(perguntas_respostas.keys())
     respostas = list(perguntas_respostas.values())
 
-    # Gerar embeddings das perguntas
-    perguntas_embeddings = gerar_embeddings(perguntas)
+    # Gerar embeddings das perguntas com cache
+    perguntas_embeddings = gerar_embeddings(tuple(perguntas))  # Cache requer que listas sejam convertidas para tuplas
     
     # Gerar embedding da pergunta do usuário
     embedding_pergunta_usuario = embedding_model.encode([pergunta_usuario], normalize_embeddings=True)
@@ -66,8 +70,7 @@ def encontrar_resposta(pergunta_usuario):
     
     return result['answer'] if result['score'] > 0.5 else "Desculpe, não consegui encontrar uma resposta precisa para a sua pergunta."
 
-# 🔹 Endpoint da API para perguntas e respostas
-
+# 🔹 Endpoints da API
 @app.route('/', methods=['GET'])
 def home():
     return jsonify({

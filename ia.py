@@ -27,7 +27,15 @@ perguntas_respostas = {
     "Quantos filhos?": "Uma filha chamada Mavie.",
     "De quem é a Mavie?": "Mavie é filha de Eduardo Rodrigues Sparremberger e Eziane da Silva Eberhardt.",
     "Onde eu moro?": "Eu moro em Itati, Rio Grande do Sul.",
-    "Quem vai ganhar o Gauchão?": "Claro que o Grêmio, Sr. Eduardo!!!"
+    "Quem vai ganhar o Gauchão?": "Claro que o Grêmio, Sr. Eduardo!!!",
+    "Qual seu signo?": "Peixes",
+    "Qual sua data de nascimento?": "11:03:2002",
+    "Onde você nasceu?": "Torres",
+    "Qual nome da sua mãe?": "Eraci Rodrigues Sparremberger",
+    "Qual nome do seu pai?": "Enio Klippel Sparremberger",
+    "Qual foi o primeiro dia que Eduardo e Eziane se conversaram?": "Dia 23/03/2022",
+    "Qual foi o primeiro encontro?" : "Dia 15/04/2022"
+    
 }
 
 # 🔹 Função para gerar embeddings das perguntas

@@ -1,16 +1,13 @@
 from flask import Flask, request, jsonify
-from transformers import pipeline
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import os
 from functools import lru_cache
+import asyncio
 
 # 🔹 Inicializar aplicação Flask
 app = Flask(__name__)
-
-# 🔹 Carregar modelo DistilBERT para Perguntas e Respostas
-qa_pipeline = pipeline("question-answering", model="distilbert-base-uncased-distilled-squad")
 
 # 🔹 Carregar modelo para Embeddings (Sentence-BERT)
 embedding_model = SentenceTransformer('paraphrase-MiniLM-L12-v2')
@@ -20,7 +17,7 @@ perguntas_respostas = {
     "Qual é o seu nome?": "Meu nome é Eduardo Rodrigues Sparremberger.",
     "Quantos anos você tem?": "Eu tenho 23 anos.",
     "Onde você mora?": "Eu moro em Itati.",
-     "Qual é a sua formação acadêmica?": "Eu sou estudante de Análise e Desenvolvimento de Sistemas e estudo sobre JavaScript.",
+    "Qual é a sua formação acadêmica?": "Eu sou estudante de Análise e Desenvolvimento de Sistemas e estudo sobre JavaScript.",
     "Onde você estuda?": "Eu estudo na Universidade FASUL, no curso de Análise e Desenvolvimento de Sistemas.",
     "Você tem irmãos?": "Sim, eu tenho um irmão mais velho chamado Daniel.",
     "Você tem filhos? Ou esposa?": "Eu estou esperando uma filha chamada Mavie. Sim, tenho esposa chamada Eziane da Silva Eberhardt!",
@@ -32,7 +29,7 @@ perguntas_respostas = {
     "Quantos filhos?": "Uma filha chamada Mavie.",
     "De quem é a Mavie?": "Mavie é filha de Eduardo Rodrigues Sparremberger e Eziane da Silva Eberhardt.",
     "Onde eu moro?": "Eu moro em Itati, Rio Grande do Sul.",
-     "Quem vai ganhar o Gauchão?": "Claro que o Grêmio, Sr. Eduardo!!!",
+    "Quem vai ganhar o Gauchão?": "Claro que o Grêmio, Sr. Eduardo!!!",
     "Qual seu signo?": "Peixes",
     "Qual sua data de nascimento?": "11:03:2002",
     "Onde você nasceu?": "Torres",
@@ -44,7 +41,6 @@ perguntas_respostas = {
     "Qual é a sua altura?": "Eu tenho 1,93m de altura.",
     "Qual a sua cor favorita?": "Minha cor favorita é azul.",
     "Qual é o seu prato favorito?": "Eu gosto muito de churrasco gaúcho."
-   
 }
 
 # 🔹 Função para gerar embeddings das perguntas com cache
@@ -53,7 +49,7 @@ def gerar_embeddings(perguntas):
     return np.array(embedding_model.encode(perguntas, normalize_embeddings=True))  # Normalização melhora precisão
 
 # 🔹 Função para encontrar a melhor resposta
-def encontrar_resposta(pergunta_usuario):
+async def encontrar_resposta(pergunta_usuario):
     # Criar lista de perguntas armazenadas
     perguntas = list(perguntas_respostas.keys())
     respostas = list(perguntas_respostas.values())
@@ -75,11 +71,7 @@ def encontrar_resposta(pergunta_usuario):
     if maior_similaridade > 0.6:  # Limite de similaridade
         return respostas[indice_mais_similar]
     
-    # Caso contrário, usar DistilBERT para responder
-    context = " ".join(respostas)
-    result = qa_pipeline(question=pergunta_usuario, context=context)
-    
-    return result['answer'] if result['score'] > 0.5 else "Desculpe, não consegui encontrar uma resposta precisa para a sua pergunta."
+    return "Desculpe, não consegui encontrar uma resposta precisa para a sua pergunta."
 
 # 🔹 Endpoints da API
 @app.route('/', methods=['GET'])
@@ -94,13 +86,13 @@ def home():
     }), 200
 
 @app.route('/pergunta', methods=['POST'])
-def responder_pergunta():
+async def responder_pergunta():
     # Obter pergunta do corpo da requisição
     data = request.json
     pergunta_usuario = data.get('pergunta', '')
 
     if pergunta_usuario:
-        resposta = encontrar_resposta(pergunta_usuario)
+        resposta = await encontrar_resposta(pergunta_usuario)
         return jsonify({'resposta': resposta}), 200
     else:
         return jsonify({'error': 'Pergunta não fornecida'}), 400

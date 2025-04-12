@@ -1,3 +1,9 @@
+# Ignorar o ambiente virtual
 venv/
+minha_ia/
+
+# Ignorar os arquivos de cache do Python
 __pycache__/
+
+# Ignorar o arquivo de configuração do Vercel
 vercel.json

@@ -1,16 +1,11 @@
-from transformers import pipeline
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-import random
 
-# 🔹 Carregar modelo DistilBERT para Perguntas e Respostas
-qa_pipeline = pipeline("question-answering", model="distilbert-base-uncased-distilled-squad")
-
-# 🔹 Carregar modelo para Embeddings (Sentence-BERT)
+# 🔹 Carrega modelo de embeddings (leve e rápido)
 embedding_model = SentenceTransformer('paraphrase-MiniLM-L12-v2')
 
-# 🔹 Banco de Perguntas e Respostas (Definido diretamente no código)
+# 🔹 Base de conhecimento
 perguntas_respostas = {
     "Qual é o seu nome?": "Meu nome é Eduardo Rodrigues Sparremberger.",
     "Quantos anos você tem?": "Eu tenho 23 anos.",
@@ -34,61 +29,45 @@ perguntas_respostas = {
     "Qual nome da sua mãe?": "Eraci Rodrigues Sparremberger",
     "Qual nome do seu pai?": "Enio Klippel Sparremberger",
     "Qual foi o primeiro dia que Eduardo e Eziane se conversaram?": "Dia 23/03/2022",
-    "Qual foi o primeiro encontro?" : "Dia 15/04/2022",
+    "Qual foi o primeiro encontro?": "Dia 15/04/2022",
     "Qual é o seu apelido?": "Me chamam de Dudu.",
     "Qual é a sua altura?": "Eu tenho 1,93m de altura.",
     "Qual a sua cor favorita?": "Minha cor favorita é azul.",
     "Qual é o seu prato favorito?": "Eu gosto muito de churrasco gaúcho."
-
 }
 
-# 🔹 Função para gerar embeddings das perguntas
-def gerar_embeddings(perguntas):
-    return np.array(embedding_model.encode(perguntas, normalize_embeddings=True))  # Normalização melhora precisão
+# 🔹 Prepara dados
+perguntas = list(perguntas_respostas.keys())
+respostas = list(perguntas_respostas.values())
+perguntas_embeddings = embedding_model.encode(perguntas, normalize_embeddings=True)
 
-# 🔹 Função para encontrar a melhor resposta
+# 🔹 Função para encontrar resposta baseada em similaridade
 def encontrar_resposta(pergunta_usuario):
-    # Criar lista de perguntas armazenadas
-    perguntas = list(perguntas_respostas.keys())
-    respostas = list(perguntas_respostas.values())
-
-    # Gerar embeddings das perguntas
-    perguntas_embeddings = gerar_embeddings(perguntas)
+    embedding_usuario = embedding_model.encode([pergunta_usuario], normalize_embeddings=True)
+    similaridades = cosine_similarity(embedding_usuario, perguntas_embeddings)[0]
     
-    # Gerar embedding da pergunta do usuário
-    embedding_pergunta_usuario = embedding_model.encode([pergunta_usuario], normalize_embeddings=True)
-
-    # Calcular a similaridade entre a pergunta do usuário e as perguntas armazenadas
-    similaridades = cosine_similarity(embedding_pergunta_usuario, perguntas_embeddings)[0]
+    indice = np.argmax(similaridades)
+    score = similaridades[indice]
     
-    # Encontrar a pergunta mais similar
-    indice_mais_similar = np.argmax(similaridades)
-    maior_similaridade = similaridades[indice_mais_similar]
+    if score > 0.6:
+        return respostas[indice]
+    elif score > 0.4:
+        return "🤖 Não tenho certeza, mas talvez esteja se referindo a: " + respostas[indice]
+    else:
+        return "🤖 Desculpe, não consegui entender bem. Pode reformular sua pergunta?"
 
-    # Se a similaridade for alta o suficiente, retornar a resposta armazenada
-    if maior_similaridade > 0.6:  # Limite de similaridade
-        return respostas[indice_mais_similar]
-    
-    # Caso contrário, usar DistilBERT para responder
-    context = " ".join(respostas)
-    result = qa_pipeline(question=pergunta_usuario, context=context)
-    
-    return result['answer'] if result['score'] > 0.5 else "Desculpe, não consegui encontrar uma resposta precisa para a sua pergunta."
-
-# 🔹 Função principal para interagir com a IA
+# 🔹 Função principal
 def interagir_com_ia():
-    print("🤖 IA: Olá! Como posso ajudá-lo?")
-    
+    print("🤖 IA: Olá! Pode me perguntar qualquer coisa sobre o Eduardo.")
     while True:
-        pergunta_usuario = input("\nVocê: ")
-        
-        if pergunta_usuario.lower() in ['sair', 'exit', 'quit']:
+        pergunta = input("\nVocê: ")
+        if pergunta.lower() in ['sair', 'exit', 'quit']:
             print("🤖 IA: Até logo!")
             break
-        
-        resposta = encontrar_resposta(pergunta_usuario)
-        print(f"🤖 IA: {resposta}")
+        resposta = encontrar_resposta(pergunta)
+        print("🤖 IA:", resposta)
 
-# 🔹 Executando a interação com a IA
+# 🔹 Executar
 if __name__ == "__main__":
     interagir_com_ia()
+

@@ -4,7 +4,6 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import os
 from functools import lru_cache
-import asyncio
 
 # 🔹 Inicializar aplicação Flask
 app = Flask(__name__)
@@ -48,8 +47,8 @@ perguntas_respostas = {
 def gerar_embeddings(perguntas):
     return np.array(embedding_model.encode(perguntas, normalize_embeddings=True))  # Normalização melhora precisão
 
-# 🔹 Função para encontrar a melhor resposta
-async def encontrar_resposta(pergunta_usuario):
+# 🔹 Função para encontrar a melhor resposta (Agora síncrona)
+def encontrar_resposta(pergunta_usuario):
     # Criar lista de perguntas armazenadas
     perguntas = list(perguntas_respostas.keys())
     respostas = list(perguntas_respostas.values())
@@ -86,13 +85,13 @@ def home():
     }), 200
 
 @app.route('/pergunta', methods=['POST'])
-async def responder_pergunta():
+def responder_pergunta():
     # Obter pergunta do corpo da requisição
     data = request.json
     pergunta_usuario = data.get('pergunta', '')
 
     if pergunta_usuario:
-        resposta = await encontrar_resposta(pergunta_usuario)
+        resposta = encontrar_resposta(pergunta_usuario)
         return jsonify({'resposta': resposta}), 200
     else:
         return jsonify({'error': 'Pergunta não fornecida'}), 400
@@ -102,3 +101,4 @@ if __name__ == '__main__':
     # Usar a variável de ambiente PORT fornecida pelo Render (ou 5000 como fallback para desenvolvimento local)
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=True, host='0.0.0.0', port=port)
+

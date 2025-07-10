@@ -1,3 +1,4 @@
+from flask_cors import CORS
 from flask import Flask, request, jsonify
 from sentence_transformers import SentenceTransformer
 import numpy as np
@@ -7,6 +8,7 @@ from functools import lru_cache
 
 # 🔹 Inicializar aplicação Flask
 app = Flask(__name__)
+CORS(app)
 
 # 🔹 Carregar modelo para Embeddings (Sentence-BERT)
 embedding_model = SentenceTransformer('paraphrase-MiniLM-L12-v2')

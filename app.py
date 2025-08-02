@@ -100,7 +100,7 @@ def responder_pergunta():
 
 # 🔹 Inicializar a API Flask
 if __name__ == '__main__':
-    # Usar a variável de ambiente PORT fornecida pelo Render (ou 5000 como fallback para desenvolvimento local)
     port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=False)
+
 

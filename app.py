@@ -1,19 +1,22 @@
-from flask_cors import CORS
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from sentence_transformers import SentenceTransformer
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import os
-from functools import lru_cache
+import logging
 
-# 🔹 Inicializar aplicação Flask
+# Configuração básica de logging
+logging.basicConfig(level=logging.INFO)
+
+# Inicializa app Flask e CORS
 app = Flask(__name__)
 CORS(app)
 
-# 🔹 Carregar modelo para Embeddings (Sentence-BERT)
+# Carrega modelo de embeddings (modelo leve e eficiente)
 embedding_model = SentenceTransformer('paraphrase-MiniLM-L12-v2')
 
-# 🔹 Banco de Perguntas e Respostas (Definido diretamente no código)
+# Perguntas e respostas fixas
 perguntas_respostas = {
     "Qual é o seu nome?": "Meu nome é Eduardo Rodrigues Sparremberger.",
     "Quantos anos você tem?": "Eu tenho 23 anos.",
@@ -37,44 +40,38 @@ perguntas_respostas = {
     "Qual nome da sua mãe?": "Eraci Rodrigues Sparremberger",
     "Qual nome do seu pai?": "Enio Klippel Sparremberger",
     "Qual foi o primeiro dia que Eduardo e Eziane se conversaram?": "Dia 23/03/2022",
-    "Qual foi o primeiro encontro?" : "Dia 15/04/2022",
+    "Qual foi o primeiro encontro?": "Dia 15/04/2022",
     "Qual é o seu apelido?": "Me chamam de Dudu.",
     "Qual é a sua altura?": "Eu tenho 1,93m de altura.",
     "Qual a sua cor favorita?": "Minha cor favorita é azul.",
     "Qual é o seu prato favorito?": "Eu gosto muito de churrasco gaúcho."
 }
 
-# 🔹 Função para gerar embeddings das perguntas com cache
-@lru_cache(maxsize=100)
-def gerar_embeddings(perguntas):
-    return np.array(embedding_model.encode(perguntas, normalize_embeddings=True))  # Normalização melhora precisão
+# Pré-calcula perguntas, respostas e embeddings
+perguntas = list(perguntas_respostas.keys())
+respostas = list(perguntas_respostas.values())
+logging.info("Calculando embeddings das perguntas fixas...")
+perguntas_embeddings = embedding_model.encode(perguntas, normalize_embeddings=True)
+logging.info("Embeddings calculadas.")
 
-# 🔹 Função para encontrar a melhor resposta (Agora síncrona)
-def encontrar_resposta(pergunta_usuario):
-    # Criar lista de perguntas armazenadas
-    perguntas = list(perguntas_respostas.keys())
-    respostas = list(perguntas_respostas.values())
+def encontrar_resposta(pergunta_usuario: str) -> str:
+    """Encontra a resposta mais próxima pela similaridade do embedding."""
+    if not pergunta_usuario.strip():
+        return "Por favor, envie uma pergunta válida."
 
-    # Gerar embeddings das perguntas com cache
-    perguntas_embeddings = gerar_embeddings(tuple(perguntas))  # Cache requer que listas sejam convertidas para tuplas
-    
-    # Gerar embedding da pergunta do usuário
-    embedding_pergunta_usuario = embedding_model.encode([pergunta_usuario], normalize_embeddings=True)
+    embedding_usuario = embedding_model.encode([pergunta_usuario], normalize_embeddings=True)
+    similaridades = cosine_similarity(embedding_usuario, perguntas_embeddings)[0]
+    indice = np.argmax(similaridades)
+    maior_similaridade = similaridades[indice]
 
-    # Calcular a similaridade entre a pergunta do usuário e as perguntas armazenadas
-    similaridades = cosine_similarity(embedding_pergunta_usuario, perguntas_embeddings)[0]
-    
-    # Encontrar a pergunta mais similar
-    indice_mais_similar = np.argmax(similaridades)
-    maior_similaridade = similaridades[indice_mais_similar]
+    logging.info(f"Similaridade encontrada: {maior_similaridade:.3f} para pergunta '{perguntas[indice]}'")
 
-    # Se a similaridade for alta o suficiente, retornar a resposta armazenada
-    if maior_similaridade > 0.6:  # Limite de similaridade
-        return respostas[indice_mais_similar]
-    
-    return "Desculpe, não consegui encontrar uma resposta precisa para a sua pergunta."
+    LIMIAR = 0.6
+    if maior_similaridade >= LIMIAR:
+        return respostas[indice]
+    else:
+        return "Desculpe, não consegui encontrar uma resposta precisa para a sua pergunta."
 
-# 🔹 Endpoints da API
 @app.route('/', methods=['GET'])
 def home():
     return jsonify({
@@ -88,19 +85,12 @@ def home():
 
 @app.route('/pergunta', methods=['POST'])
 def responder_pergunta():
-    # Obter pergunta do corpo da requisição
     data = request.json
-    pergunta_usuario = data.get('pergunta', '')
+    pergunta = data.get('pergunta', '') if data else ''
+    resposta = encontrar_resposta(pergunta)
+    return jsonify({'resposta': resposta})
 
-    if pergunta_usuario:
-        resposta = encontrar_resposta(pergunta_usuario)
-        return jsonify({'resposta': resposta}), 200
-    else:
-        return jsonify({'error': 'Pergunta não fornecida'}), 400
-
-# 🔹 Inicializar a API Flask
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
-
-
+    logging.info(f"Iniciando servidor na porta {port}...")
+    app.run(host='0.0.0.0', port=port)

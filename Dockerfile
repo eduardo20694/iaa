@@ -14,4 +14,5 @@ RUN pip install --upgrade pip setuptools wheel && \
 COPY . .
 
 # Usa 1 worker e timeout maior para economizar memória e evitar timeout (ajuste para seu ambiente)
-CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:8000", "--timeout", "120", "app:app"]
+CMD ["sh", "-c", "gunicorn -w 1 -b 0.0.0.0:$PORT --timeout 120 app:app"]
+
